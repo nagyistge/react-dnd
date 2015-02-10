@@ -9,7 +9,8 @@ var _draggedItem = null,
     _effectsAllowed = null,
     _dragStartOffset = null,
     _dragOffset = null,
-    _dropEffect = null;
+    _dropEffect = null,
+    _draggedItemKey = null;
 
 var DragDropStore = createStore({
   isDragging() {
@@ -36,6 +37,10 @@ var DragDropStore = createStore({
     return _draggedItem;
   },
 
+  getDraggedItemKey() {
+    return _draggedItemKey;
+  },
+
   getDraggedItemType() {
     return _draggedItemType;
   }
@@ -49,6 +54,7 @@ DragDropDispatcher.register(function (payload) {
     _dropEffect = null;
     _draggedItem = action.item;
     _draggedItemType = action.itemType;
+    _draggedItemKey = action.itemKey;
     _effectsAllowed = action.effectsAllowed;
     _dragOffset = action.dragOffset;
     _dragStartOffset = action.dragStartOffset;
@@ -68,6 +74,7 @@ DragDropDispatcher.register(function (payload) {
   case DragDropActionTypes.DRAG_END:
     _draggedItem = null;
     _draggedItemType = null;
+    _draggedItemKey = null;
     _effectsAllowed = null;
     _dropEffect = null;
     _dragStartOffset = null;

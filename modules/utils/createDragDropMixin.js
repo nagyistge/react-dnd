@@ -106,6 +106,7 @@ function createDragDropMixin(backend) {
 
     getStateFromDragDropStore() {
       return {
+        draggedItemKey: DragDropStore.getDraggedItemKey(),
         draggedItem: DragDropStore.getDraggedItem(),
         draggedItemType: DragDropStore.getDraggedItemType()
       };
@@ -116,7 +117,7 @@ function createDragDropMixin(backend) {
       checkDragSourceDefined(this, type);
 
       return {
-        isDragging: this.state.ownDraggedItemType === type
+        isDragging: this._dragSources[type].key(this) === this.state.draggedItemKey
       };
     },
 
@@ -138,8 +139,8 @@ function createDragDropMixin(backend) {
       this._dragSources = {};
       this._dropTargets = {};
 
-      invariant(this.configureDragDrop, 'Implement configureDragDrop(registerType) to use DragDropMixin');
-      this.configureDragDrop(this.registerDragDropItemTypeHandlers);
+      invariant(this.constructor.configureDragDrop, 'Implement configureDragDrop(registerType) to use DragDropMixin');
+      this.constructor.configureDragDrop(this.registerDragDropItemTypeHandlers);
     },
 
     componentDidMount() {
@@ -155,7 +156,7 @@ function createDragDropMixin(backend) {
     registerDragDropItemTypeHandlers(type, handlers) {
       checkValidType(this, type);
 
-      var { dragSource, dropTarget } = handlers;
+      var { key, dragSource, dropTarget } = handlers;
 
       if (dragSource) {
         invariant(
@@ -166,6 +167,7 @@ function createDragDropMixin(backend) {
         );
 
         this._dragSources[type] = defaults(bindAll(dragSource, this), DefaultDragSource);
+
       }
 
       if (dropTarget) {
@@ -178,6 +180,8 @@ function createDragDropMixin(backend) {
 
         this._dropTargets[type] = defaults(bindAll(dropTarget, this), DefaultDropTarget);
       }
+
+
     },
 
     handleDragDropStoreChange() {
@@ -196,12 +200,12 @@ function createDragDropMixin(backend) {
     handleDragStart(type, e) {
       var { canDrag, beginDrag } = this._dragSources[type];
 
-      if (!canDrag(e)) {
+      if (!canDrag(this, e)) {
         e.preventDefault();
         return;
       }
 
-      var dragOptions = beginDrag(e),
+      var dragOptions = beginDrag(this, e),
           // TODO: there should be a better way to calculate all these offsets
           containerNode = this.getDOMNode(),
           containerRect = containerNode.getBoundingClientRect(),
@@ -210,7 +214,7 @@ function createDragDropMixin(backend) {
             x: dragOffset.x - containerRect.left,
             y: dragOffset.y - containerRect.top
           },
-          { item, dragPreview, dragAnchors, effectsAllowed } = dragOptions;
+          { key, item, dragPreview, dragAnchors, effectsAllowed } = dragOptions;
 
       if (!effectsAllowed) {
         // Move is a sensible default drag effect.
@@ -222,7 +226,7 @@ function createDragDropMixin(backend) {
       invariant(isObject(item), 'Expected return value of beginDrag to contain "item" object');
 
       backend.beginDrag(this, e, containerNode, dragPreview, dragAnchors, dragStartOffset, effectsAllowed);
-      DragDropActionCreators.startDragging(type, item, effectsAllowed, dragOffset, dragStartOffset);
+      DragDropActionCreators.startDragging(type, item, key, effectsAllowed, dragOffset, dragStartOffset);
 
       // Delay setting own state by a tick so `getDragState(type).isDragging`
       // doesn't return `true` yet. Otherwise browser will capture dragged state
@@ -287,7 +291,7 @@ function createDragDropMixin(backend) {
         effectsAllowed = [DropEffects.COPY];
       }
 
-      var dropEffect = getDropEffect(effectsAllowed);
+      var dropEffect = getDropEffect(this, effectsAllowed);
       if (dropEffect) {
         invariant(
           effectsAllowed.indexOf(dropEffect) > -1,
@@ -301,7 +305,7 @@ function createDragDropMixin(backend) {
         currentDropEffect: dropEffect
       });
 
-      enter(this.state.draggedItem, e);
+      enter(this, this.state.draggedItem, e);
     },
 
     handleDragOver(types, e) {
@@ -312,7 +316,7 @@ function createDragDropMixin(backend) {
       e.preventDefault();
 
       var { over, getDropEffect } = this._dropTargets[this.state.draggedItemType];
-      over(this.state.draggedItem, e);
+      over(this, this.state.draggedItem, e);
 
       // Don't use `none` because this will prevent browser from firing `dragend`
       backend.dragOver(e, this.state.currentDropEffect || 'move');

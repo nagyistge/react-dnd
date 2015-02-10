@@ -61,33 +61,37 @@ var cardStyle = {
 var Column = React.createClass({
   mixins: [MouseDragDropMixin],
 
-  configureDragDrop(registerType) {
-    registerType(DropTypes.COLUMN, {
-      dragSource: {
-        beginDrag() {
-          return {
-            item: {
-              id: this.props.id,
-              children: <Column {...this.props}/>
-            }
-          };
-        }
-      },
+  statics: {
+    configureDragDrop(registerType) {
+      registerType(DropTypes.COLUMN, {
+        dragSource: {
+          key(c){return 'c' + c.props.id},
+          beginDrag(component) {
+            return {
+              key: 'c'+ component.props.id, // TODO: use this
+              item: {
+                id: component.props.id,
+                children: React.addons.cloneWithProps(<Column {...component.props}/>, {id: 'e'})
+              }
+            };
+          }
+        },
 
-      dropTarget: {
-        over(item) {
-          this.props.move(item.id, this.props.id);
+        dropTarget: {
+          over(component, item) {
+            component.props.move(item.id, component.props.id);
+          }
         }
-      }
-    });
+      });
 
-    registerType(DropTypes.CARD, { // FIXME: not working
-      dropTarget: {
-        over(item) {
-          this.props.moveCard(item.id, this.props.id);
+      registerType(DropTypes.CARD, { // FIXME: not working
+        dropTarget: {
+          over(component, item) {
+            component.props.moveCard(item.id, component.props.id);
+          }
         }
-      }
-    });
+      });
+    },
   },
 
   render() {
@@ -110,28 +114,32 @@ var Card =  React.createClass({
     moveCard: PropTypes.func.isRequired
   },
 
-  configureDragDrop(registerType) {
-    registerType(DropTypes.CARD, {
-      dragSource: {
-        beginDrag(e) {
-          e.stopPropagation(); // FIXME:
-          var rect = this.getDOMNode().getBoundingClientRect();
-          return {
-            item: {
-              id: this.props.id,
-              columnId: this.props.columnId,
-              children: <Card style={{cursor: 'inherit'}} {...this.props}/>
-            }
-          };
-        }
-      },
+  statics: {
+    configureDragDrop(registerType) {
+      registerType(DropTypes.CARD, {
+        dragSource: {
+          key(c){return c.props.id},
+          beginDrag(component, e) {
+            e.stopPropagation();
 
-      dropTarget: {
-        over(item) {
-          this.props.moveCard(item.id, this.props.id, this.props.columnId);
+            return {
+              key: component.props.id,
+              item: {
+                id: component.props.id,
+                columnId: component.props.columnId,
+                children: React.addons.cloneWithProps(<Card style={{cursor: 'inherit'}} {...component.props}/>, {id: 'f'})
+              }
+            };
+          }
+        },
+
+        dropTarget: {
+          over(component, item) {
+            component.props.moveCard(item.id, component.props.id, component.props.columnId);
+          }
         }
-      }
-    });
+      });
+    },
   },
 
   render() {
