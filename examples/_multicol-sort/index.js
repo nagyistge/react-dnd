@@ -86,8 +86,8 @@ var Column = React.createClass({
 
       registerType(DropTypes.CARD, { // FIXME: not working
         dropTarget: {
-          over(component, item) {
-            component.props.moveCard(item.id, component.props.id);
+          over(component, item, e) {
+            if ( component.props.columnId)component.props.moveCard(item.id, component.props.id, component.props.columnId);
           }
         }
       });
