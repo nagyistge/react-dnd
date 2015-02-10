@@ -99,7 +99,7 @@ var Column = React.createClass({
     return <section
       style={_.extend(columnStyle, {opacity: isDragging ? 0 : 1})}
       {...this.dragSourceFor(DropTypes.COLUMN)}
-      {...this.dropTargetFor(DropTypes.COLUMN)}
+      {...this.dropTargetFor(DropTypes.COLUMN, DropTypes.CARD)}
     >{this.props.children}
     </section>;
   }
