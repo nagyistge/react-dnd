@@ -1,5 +1,7 @@
 var React = require('react/addons');
 var _ = require('lodash');
+var Perf = React.addons.Perf;
+
 
 var Data = require('./Data');
 var Header = require('./Header');
@@ -41,7 +43,10 @@ var App = React.createClass({
     // so assign it to this.state and force an update :/
     this.state = setPosition(this.state, 'cards', index, afterIndex);
 
-    this.setState(this.state);
+    //this.setState(this.state);
+    Perf.stop();
+    Perf.printWasted();
+    Perf.printExclusive();
   },
 
   renderCards(column) {
@@ -68,6 +73,13 @@ var App = React.createClass({
         move={this.moveColumn}
         moveCard={this.moveCardToColumn}
       >
+        <div style={{
+          background: '#333',
+          color: '#fff',
+          borderBottom: '3px solid #fff',
+          minHeight: 20,
+          margin: 2,
+        }}>{column.text}</div>
         {this.renderCards(column)}
       </Column>
     );

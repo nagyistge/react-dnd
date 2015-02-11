@@ -2,7 +2,8 @@ var React = require('react/addons');
 var { DragDropMixin } = require('react-dnd');
 
 module.exports = {
-  mixins: [DragDropMixin, React.addons.PureRenderMixn],
+  mixins: [DragDropMixin],
+
   render() {
     var { isDragging } = this.getDragState(this.getSourceType());
     return (

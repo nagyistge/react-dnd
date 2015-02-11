@@ -4,11 +4,11 @@ var r = n => require('random-words')(n);
 var cols = _.chain(5).times(_.partial(_.uniqueId, 'col_')).map((k,v) => {
   return {
     id: k,
-    text: r(_.random(1,2)).join(' ')
+    text: r(_.random(1, 2)).join(' ')
   };
 }).value();
 
-var cards = _.chain(50).times(_.partial(_.uniqueId, 'card_')).map((k,v) => {
+var cards = _.chain(100).times(_.partial(_.uniqueId, 'card_')).map((k,v) => {
   return {
     id: k,
     text: r(_.random(1, 5)).join(' '),

@@ -1,10 +1,20 @@
 var React = require('react/addons');
+var Perf = React.addons.Perf;
 
 var DraggableMixin = require('./DraggableMixin');
 var DropTypes = require('./DropTypes');
 
 var Card =  React.createClass({
   mixins: [DraggableMixin],
+  shouldComponentUpdate(np, ns) {
+    var { isDragging } = this.getDragState(this.getSourceType());
+    if (this._wasDrag !== isDragging) {
+      this._wasDrag = isDragging;
+      return true;
+    }
+
+    return false;
+  },
 
   propTypes: {
     id: React.PropTypes.any.isRequired,
@@ -17,12 +27,14 @@ var Card =  React.createClass({
       registerType(DropTypes.CARD, {
         dragSource: {
           getKey(component) {
-            return DropTypes.CARD + component.props.id;
+            return component.props.id;
           },
 
+          endDrag(c) {
+            c.forceUpdate();
+          },
           beginDrag(component, e) {
             e.stopPropagation();
-
             return {
               item: {
                 id: component.props.id,

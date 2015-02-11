@@ -11,7 +11,7 @@ var Column = React.createClass({
       registerType(DropTypes.COLUMN, {
         dragSource: {
           getKey(component) {
-            return DropTypes.COLUMN + component.props.id;
+            return component.props.id;
           },
 
           beginDrag(component) {
