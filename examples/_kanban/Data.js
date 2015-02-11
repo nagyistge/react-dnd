@@ -8,7 +8,8 @@ var cols = _.chain(5).times(_.partial(_.uniqueId, 'col_')).map((k,v) => {
   };
 }).value();
 
-var cards = _.chain(100).times(_.partial(_.uniqueId, 'card_')).map((k,v) => {
+// FIXME: 300 is about the max performence atm
+var cards = _.chain(300).times(_.partial(_.uniqueId, 'card_')).map((k,v) => {
   return {
     id: k,
     text: r(_.random(1, 5)).join(' '),

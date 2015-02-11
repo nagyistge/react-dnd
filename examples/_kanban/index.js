@@ -43,10 +43,7 @@ var App = React.createClass({
     // so assign it to this.state and force an update :/
     this.state = setPosition(this.state, 'cards', index, afterIndex);
 
-    //this.setState(this.state);
-    Perf.stop();
-    Perf.printWasted();
-    Perf.printExclusive();
+    this.setState(this.state);
   },
 
   renderCards(column) {
