@@ -19,6 +19,7 @@ var DragDropActionCreators = require('../actions/DragDropActionCreators'),
     isObject = require('lodash/lang/isObject'),
     noop = require('lodash/utility/noop');
 
+var _hack = null;
 function checkValidType(component, type) {
   invariant(
     type && typeof type === 'string',
@@ -166,7 +167,7 @@ var DragDropMixin = {
   getDragState(type) {
     checkValidType(this, type);
     checkDragSourceDefined(this, type);
-
+    _hack = this;
     return {
       isDragging: this._dragSources[type].getKey(this) === this.state.draggedItemKey
     };
@@ -215,7 +216,6 @@ var DragDropMixin = {
       HTML5.setup();
     }
     _refs++;
-
     DragDropStore.addChangeListener(this.handleDragDropStoreChange);
   },
 
@@ -224,7 +224,7 @@ var DragDropMixin = {
     if (_refs === 0) {
       HTML5.teardown();
     }
-
+    _hack = null;
     DragDropStore.removeChangeListener(this.handleDragDropStoreChange);
   },
 
@@ -337,7 +337,7 @@ var DragDropMixin = {
 
     callDragDropLifecycle(
       endDrag,
-      (mounted || this.constructor._legacyConfigureDragDrop) ? this : null, // Don't send static api component if it's unmounted
+      (mounted || this.constructor._legacyConfigureDragDrop) ? this : _hack, // Don't send static api component if it's unmounted
       effect,
       e
     );
