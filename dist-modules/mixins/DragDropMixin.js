@@ -12,14 +12,14 @@ var DragDropActionCreators = require('../actions/DragDropActionCreators'),
     invariant = require('react/lib/invariant'),
     warning = require('react/lib/warning'),
     assign = require('react/lib/Object.assign'),
-    defaults = require('lodash-node/modern/objects/defaults'),
-    union = require('lodash-node/modern/arrays/union'),
-    rest = require('lodash-node/modern/arrays/rest'),
-    without = require('lodash-node/modern/arrays/without'),
-    isArray = require('lodash-node/modern/objects/isArray'),
-    isObject = require('lodash-node/modern/objects/isObject'),
-    noop = require('lodash-node/modern/utilities/noop');
+    defaults = require('lodash/object/defaults'),
+    union = require('lodash/array/union'),
+    without = require('lodash/array/without'),
+    isArray = require('lodash/lang/isArray'),
+    isObject = require('lodash/lang/isObject'),
+    noop = require('lodash/utility/noop');
 
+var _hack = null;
 function checkValidType(component, type) {
   invariant(
     type && typeof type === 'string',
@@ -56,22 +56,30 @@ function checkDropTargetDefined(component, type) {
   );
 }
 
-function callDragDropLifecycle(func, component) {
-  if (component.constructor._legacyConfigureDragDrop) {
-    return func.apply(component, rest(arguments, 2));
+function callDragDropLifecycle(func, component ) {for (var rest=[],$__0=2,$__1=arguments.length;$__0<$__1;$__0++) rest.push(arguments[$__0]);
+  if (component && component.constructor._legacyConfigureDragDrop) {
+    return func.apply(component, rest);
   }
 
-  return func.apply(null, rest(arguments, 1));
+  return func.apply(null, [component].concat(rest));
 }
 
 var UNLIKELY_CHAR = String.fromCharCode(0xD83D, 0xDCA9),
-    _refs = 0;
+    _refs = 0,
+    _nextDragSourceKey = 0;
 
 function hashStringArray(arr) {
   return arr.join(UNLIKELY_CHAR);
 }
 
 var DefaultDragSource = {
+  getKey:function() {
+    if (!this._dragSourceKey) {
+      this._dragSourceKey = ('_' + _nextDragSourceKey++);
+    }
+    return this._dragSourceKey;
+  },
+
   canDrag:function() {
     return true;
   },
@@ -151,6 +159,7 @@ var DragDropMixin = {
   getStateFromDragDropStore:function() {
     return {
       draggedItem: DragDropStore.getDraggedItem(),
+      draggedItemKey: DragDropStore.getDraggedItemKey(),
       draggedItemType: DragDropStore.getDraggedItemType()
     };
   },
@@ -158,9 +167,9 @@ var DragDropMixin = {
   getDragState:function(type) {
     checkValidType(this, type);
     checkDragSourceDefined(this, type);
-
+    _hack = this;
     return {
-      isDragging: this.state.ownDraggedItemType === type
+      isDragging: this._dragSources[type].getKey(this) === this.state.draggedItemKey
     };
   },
 
@@ -207,7 +216,6 @@ var DragDropMixin = {
       HTML5.setup();
     }
     _refs++;
-
     DragDropStore.addChangeListener(this.handleDragDropStoreChange);
   },
 
@@ -216,7 +224,7 @@ var DragDropMixin = {
     if (_refs === 0) {
       HTML5.teardown();
     }
-
+    _hack = null;
     DragDropStore.removeChangeListener(this.handleDragDropStoreChange);
   },
 
@@ -266,7 +274,7 @@ var DragDropMixin = {
   },
 
   handleDragStart:function(type, e) {
-    var $__0=     this._dragSources[type],canDrag=$__0.canDrag,beginDrag=$__0.beginDrag;
+    var $__0=      this._dragSources[type],getKey=$__0.getKey,canDrag=$__0.canDrag,beginDrag=$__0.beginDrag;
 
     if (!callDragDropLifecycle(canDrag, this, e)) {
       e.preventDefault();
@@ -293,13 +301,14 @@ var DragDropMixin = {
     invariant(isObject(item), 'Expected return value of beginDrag to contain "item" object');
 
     configureDataTransfer(this.getDOMNode(), e.nativeEvent, dragPreview, dragAnchors, effectsAllowed);
-    DragDropActionCreators.startDragging(type, item, effectsAllowed);
+
 
     // Delay setting own state by a tick so `getDragState(type).isDragging`
     // doesn't return `true` yet. Otherwise browser will capture dragged state
     // as the element screenshot.
 
     setTimeout(function()  {
+      DragDropActionCreators.startDragging(getKey(this), type, item, effectsAllowed); // this action sets state
       if (this.isMounted() && DragDropStore.getDraggedItem() === item) {
         this.setState({
           ownDraggedItemType: type
@@ -312,23 +321,26 @@ var DragDropMixin = {
     HTML5.endDrag();
 
     var $__0=    this._dragSources[type],endDrag=$__0.endDrag,
-        effect = DragDropStore.getDropEffect();
+        effect = DragDropStore.getDropEffect(),
+        mounted = this.isMounted();
 
     DragDropActionCreators.endDragging();
 
-    if (!this.isMounted()) {
+    // Note: this method may be invoked even *after* component was unmounted
+    // This happens if source node was removed from DOM while dragging.
 
-      // Note: this method may be invoked even *after* component was unmounted
-      // This happens if source node was removed from DOM while dragging.
-
-      return;
+    if (mounted) {
+      this.setState({
+        ownDraggedItemType: null
+      });
     }
 
-    this.setState({
-      ownDraggedItemType: null
-    });
-
-    callDragDropLifecycle(endDrag, this, effect, e);
+    callDragDropLifecycle(
+      endDrag,
+      (mounted || this.constructor._legacyConfigureDragDrop) ? this : _hack, // Don't send static api component if it's unmounted
+      effect,
+      e
+    );
   },
 
   dropTargetFor:function() {for (var types=[],$__0=0,$__1=arguments.length;$__0<$__1;$__0++) types.push(arguments[$__0]);
